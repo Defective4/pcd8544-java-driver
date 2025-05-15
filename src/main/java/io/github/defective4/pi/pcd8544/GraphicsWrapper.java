@@ -16,19 +16,26 @@ import java.util.Map;
 
 public class GraphicsWrapper extends Graphics2D {
     private static final int black = Color.black.getRGB();
-    private BufferedImage canvas;
-    private Graphics2D gfx;
+    private final BufferedImage canvas = new BufferedImage(PCDConstants.LCDWIDTH, PCDConstants.LCDHEIGHT,
+            BufferedImage.TYPE_BYTE_BINARY);
+    private final Graphics2D gfx = canvas.createGraphics();
 
     private final PCD8544 lcd;
 
     public GraphicsWrapper(PCD8544 lcd) {
         this.lcd = lcd;
-        resetGraphics();
+        clear();
     }
 
     @Override
     public void addRenderingHints(Map<?, ?> hints) {
         gfx.addRenderingHints(hints);
+    }
+
+    public void clear() {
+        gfx.setColor(Color.white);
+        gfx.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        gfx.setColor(Color.black);
     }
 
     @Override
@@ -46,7 +53,7 @@ public class GraphicsWrapper extends Graphics2D {
         gfx.clipRect(x, y, width, height);
     }
 
-    public void commit() {
+    public void commit(boolean allowPartialUpdates) {
         byte[][] buffer = new byte[canvas.getWidth()][];
         for (int x = 0; x < buffer.length; x++) {
             byte[] yBuf = new byte[canvas.getHeight()];
@@ -57,7 +64,7 @@ public class GraphicsWrapper extends Graphics2D {
             }
             buffer[x] = yBuf;
         }
-        lcd.set2DBuffer(buffer);
+        lcd.set2DBuffer(buffer, allowPartialUpdates);
     }
 
     @Override
@@ -358,14 +365,6 @@ public class GraphicsWrapper extends Graphics2D {
     @Override
     public boolean hitClip(int x, int y, int width, int height) {
         return gfx.hitClip(x, y, width, height);
-    }
-
-    public void resetGraphics() {
-        canvas = new BufferedImage(PCDConstants.LCDWIDTH, PCDConstants.LCDHEIGHT, BufferedImage.TYPE_BYTE_BINARY);
-        gfx = canvas.createGraphics();
-        gfx.setColor(Color.white);
-        gfx.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        gfx.setColor(Color.black);
     }
 
     @Override
