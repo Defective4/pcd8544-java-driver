@@ -1,0 +1,7 @@
+/target/
+Main.java
+/.project
+/.classpath
+/.settings
+/*.png
+dependency-reduced-pom.xml
