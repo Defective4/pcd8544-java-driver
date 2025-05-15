@@ -21,3 +21,11 @@ It also has a few enhancements compared to the original library.
 ## Examples
 
 *Soon*
+
+## TODO
+
+- [ ] Text support
+
+- [ ] Backlight control (possibly with PWM)
+
+- [ ] Other features from the original library
