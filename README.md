@@ -1,6 +1,8 @@
 # PCD8544 Java Driver
 
-<img src="./img/example.png" title="" alt="example" width="228">
+<img src="./img/example.png" title="" alt="example" width="228">  
+
+*[Discord Java Community](https://discordjug.net/)'s logo displayed on the LCD*  
 
 This is a Java port of [Adafruit PCD8544 Nokia 5110 LCD Library](https://github.com/adafruit/Adafruit-PCD8544-Nokia-5110-LCD-library) designed to work on Raspberry Pi with [pi4j](http://www.pi4j.com/).  
 It also has a few enhancements compared to the original library.
