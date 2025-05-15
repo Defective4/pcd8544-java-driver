@@ -6,6 +6,7 @@ import static java.lang.Math.min;
 import java.util.Arrays;
 
 import com.pi4j.io.gpio.digital.DigitalOutput;
+import com.pi4j.io.spi.Spi;
 
 public class PCD8544 extends SPIDevice {
 
@@ -24,6 +25,12 @@ public class PCD8544 extends SPIDevice {
     public PCD8544(DigitalOutput clockPin, DigitalOutput dataPin, DigitalOutput chipSelectPin, DigitalOutput dcPin,
             DigitalOutput resetPin) {
         super(clockPin, dataPin, chipSelectPin);
+        this.dcPin = dcPin;
+        this.resetPin = resetPin;
+    }
+
+    public PCD8544(Spi spi, DigitalOutput dcPin, DigitalOutput resetPin) {
+        super(spi);
         this.dcPin = dcPin;
         this.resetPin = resetPin;
     }
