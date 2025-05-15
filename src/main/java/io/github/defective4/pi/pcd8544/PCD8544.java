@@ -4,6 +4,7 @@ import static io.github.defective4.pi.pcd8544.PCDConstants.*;
 import static java.lang.Math.min;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import com.pi4j.io.gpio.digital.DigitalOutput;
 import com.pi4j.io.spi.Spi;
@@ -17,9 +18,11 @@ public class PCD8544 extends SPIDevice {
     private final int[] buffer = new int[LCDWIDTH * LCDHEIGHT / 8];
     private int contrast;
     private final DigitalOutput dcPin, resetPin;
+    private byte[][] tdBufferCache = new byte[84][48];
     private int xUpdateMax;
     private int xUpdateMin;
     private int yUpdateMax;
+
     private int yUpdateMin;
 
     public PCD8544(DigitalOutput clockPin, DigitalOutput dataPin, DigitalOutput chipSelectPin, DigitalOutput dcPin,
@@ -36,7 +39,7 @@ public class PCD8544 extends SPIDevice {
     }
 
     public void clear() {
-        synchronized (this.buffer) {
+        synchronized (buffer) {
             Arrays.fill(buffer, 0);
             updateBoundingBox(0, 0, LCDWIDTH - 1, LCDHEIGHT - 1);
         }
@@ -85,6 +88,7 @@ public class PCD8544 extends SPIDevice {
     }
 
     public void set2DBuffer(byte[][] buffer, boolean allowPartialUpdates) {
+        Objects.requireNonNull(buffer);
         if (buffer.length != LCDWIDTH)
             throw new IllegalArgumentException("The 2D buffer must be " + LCDWIDTH + "x" + LCDHEIGHT);
         for (byte[] sub : buffer) {
@@ -92,10 +96,6 @@ public class PCD8544 extends SPIDevice {
                 throw new IllegalArgumentException("The 2D buffer must be " + LCDWIDTH + "x" + LCDHEIGHT);
         }
         clear();
-        int maxX = 0;
-        int maxY = 0;
-        int minX = LCDWIDTH - 1;
-        int minY = LCDHEIGHT - 1;
         synchronized (this.buffer) {
             for (int x = 0; x < buffer.length; x++) {
                 byte[] sub = buffer[x];
@@ -105,16 +105,29 @@ public class PCD8544 extends SPIDevice {
                         int i = x + page * LCDWIDTH;
                         int modY = y % 8;
                         this.buffer[i] |= 1 << modY;
-                        maxX = Math.max(maxX, x);
-                        maxY = Math.max(maxY, y);
-                        minX = Math.min(minX, x);
-                        minY = Math.min(minY, y);
                     }
                 }
             }
         }
-        if (allowPartialUpdates) updateBoundingBox(minX, minY, maxX, maxY);
-        else updateBoundingBox(0, 0, LCDWIDTH - 1, LCDHEIGHT - 1);
+        int maxX = 0;
+        int maxY = 0;
+        int minX = LCDWIDTH - 1;
+        int minY = LCDHEIGHT - 1;
+        if (allowPartialUpdates) {
+            for (int x = 0; x < buffer.length; x++) {
+                byte[] sub = buffer[x];
+                for (int y = 0; y < sub.length; y++) {
+                    if (sub[y] != tdBufferCache[x][y]) {
+                        maxX = Math.max(x, maxX);
+                        maxY = Math.max(y, maxY);
+                        minX = Math.min(x, minX);
+                        minY = Math.min(y, minY);
+                    }
+                }
+            }
+            tdBufferCache = buffer;
+            updateBoundingBox(minX, minY, maxX, maxY);
+        } else updateBoundingBox(0, 0, LCDWIDTH - 1, LCDHEIGHT - 1);
     }
 
     public void setBias(int val) {
