@@ -10,6 +10,7 @@ public class SPIDevice {
     private final DigitalOutput clockPin, dataPin, chipSelectPin;
 
     private final Spi spi;
+    private final Object writeLock = new Object();
 
     public SPIDevice(DigitalOutput clockPin, DigitalOutput dataPin, DigitalOutput chipSelectPin) {
         Objects.requireNonNull(clockPin);
@@ -34,23 +35,27 @@ public class SPIDevice {
     }
 
     protected void initSPI() {
-        if (chipSelectPin != null) chipSelectPin.high();
+        synchronized (writeLock) {
+            if (chipSelectPin != null) chipSelectPin.high();
+        }
     }
 
     protected void writeSPI(int data) {
-        if (spi == null) {
-            chipSelectPin.low();
-            for (int i = 0; i < 8; i++) {
-                boolean state = (data >> 7 - i & 0x01) > 0;
-                dataPin.setState(state);
-                clockPin.high();
-                delay(1);
-                clockPin.low();
+        synchronized (writeLock) {
+            if (spi == null) {
+                chipSelectPin.low();
+                for (int i = 0; i < 8; i++) {
+                    boolean state = (data >> 7 - i & 0x01) > 0;
+                    dataPin.setState(state);
+                    clockPin.high();
+                    delay(1);
+                    clockPin.low();
+                }
+                dataPin.low();
+                chipSelectPin.high();
+            } else {
+                spi.write(data);
             }
-            dataPin.low();
-            chipSelectPin.high();
-        } else {
-            spi.write(data);
         }
     }
 }

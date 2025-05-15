@@ -36,8 +36,10 @@ public class PCD8544 extends SPIDevice {
     }
 
     public void clear() {
-        Arrays.fill(buffer, 0);
-        updateBoundingBox(0, 0, LCDWIDTH - 1, LCDHEIGHT - 1);
+        synchronized (this.buffer) {
+            Arrays.fill(buffer, 0);
+            updateBoundingBox(0, 0, LCDWIDTH - 1, LCDHEIGHT - 1);
+        }
     }
 
     public void display() {
@@ -94,18 +96,20 @@ public class PCD8544 extends SPIDevice {
         int maxY = 0;
         int minX = LCDWIDTH - 1;
         int minY = LCDHEIGHT - 1;
-        for (int x = 0; x < buffer.length; x++) {
-            byte[] sub = buffer[x];
-            for (int y = 0; y < sub.length; y++) {
-                if (buffer[x][y] > 0) {
-                    int page = y / 8;
-                    int i = x + page * LCDWIDTH;
-                    int modY = y % 8;
-                    this.buffer[i] |= 1 << modY;
-                    maxX = Math.max(maxX, x);
-                    maxY = Math.max(maxY, y);
-                    minX = Math.min(minX, x);
-                    minY = Math.min(minY, y);
+        synchronized (this.buffer) {
+            for (int x = 0; x < buffer.length; x++) {
+                byte[] sub = buffer[x];
+                for (int y = 0; y < sub.length; y++) {
+                    if (buffer[x][y] > 0) {
+                        int page = y / 8;
+                        int i = x + page * LCDWIDTH;
+                        int modY = y % 8;
+                        this.buffer[i] |= 1 << modY;
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                    }
                 }
             }
         }
@@ -136,8 +140,10 @@ public class PCD8544 extends SPIDevice {
     }
 
     public void setDirectBuffer(int[] buffer) {
-        int len = min(this.buffer.length, buffer.length);
-        for (int i = 0; i < len; i++) this.buffer[i] = buffer[i];
+        synchronized (this.buffer) {
+            int len = min(this.buffer.length, buffer.length);
+            for (int i = 0; i < len; i++) this.buffer[i] = buffer[i];
+        }
     }
 
     public void updateBoundingBox(int xmin, int ymin, int xmax, int ymax) {
