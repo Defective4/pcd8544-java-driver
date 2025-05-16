@@ -13,13 +13,17 @@ import java.awt.image.renderable.RenderableImage;
 import java.text.AttributedCharacterIterator;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
+
+import io.github.defective4.pi.pcd8544.font.BitmapFont;
 
 public class GraphicsWrapper extends Graphics2D {
     private static final int black = Color.black.getRGB();
     private final BufferedImage canvas = new BufferedImage(PCDConstants.LCDWIDTH, PCDConstants.LCDHEIGHT,
             BufferedImage.TYPE_BYTE_BINARY);
-    private final Graphics2D gfx = canvas.createGraphics();
+    private int[] font = BitmapFont.DEFAULT_FONT.getFont();
 
+    private final Graphics2D gfx = canvas.createGraphics();
     private final PCD8544 lcd;
 
     public GraphicsWrapper(PCD8544 lcd) {
@@ -100,6 +104,27 @@ public class GraphicsWrapper extends Graphics2D {
     @Override
     public void drawArc(int x, int y, int width, int height, int startAngle, int arcAngle) {
         gfx.drawArc(x, y, width, height, startAngle, arcAngle);
+    }
+
+    public void drawBitmapChar(int x, int y, char c) {
+        int index = c * 5;
+        if (index >= font.length - 5)
+            throw new IllegalArgumentException("Can't find font entry for character '" + c + "'");
+        for (int i = 0; i < 5; i++) {
+            int b = font[c * 5 + i];
+            for (int j = 0; j < 8; j++) {
+                boolean bit = (b >> j & 0x01) > 0;
+                int rgb = (bit ? Color.black : Color.white).getRGB();
+                canvas.setRGB(Math.min(canvas.getWidth() - 1, x + i), Math.min(canvas.getHeight() - 1, y + j), rgb);
+            }
+        }
+    }
+
+    public void drawBitmapString(int x, int y, String str) {
+        char[] chars = str.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            drawBitmapChar(x + i * 6, y, chars[i]);
+        }
     }
 
     @Override
@@ -269,6 +294,10 @@ public class GraphicsWrapper extends Graphics2D {
         return gfx.getBackground();
     }
 
+    public int[] getBitmapFont() {
+        return font;
+    }
+
     @Override
     public Shape getClip() {
         return gfx.getClip();
@@ -385,6 +414,11 @@ public class GraphicsWrapper extends Graphics2D {
     @Override
     public void setBackground(Color color) {
         gfx.setBackground(color);
+    }
+
+    public void setBitmapFont(BitmapFont bitmapFont) {
+        Objects.requireNonNull(bitmapFont);
+        font = bitmapFont.getFont();
     }
 
     @Override
